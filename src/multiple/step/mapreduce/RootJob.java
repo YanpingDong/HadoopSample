@@ -49,38 +49,42 @@ public class RootJob extends Configured implements Tool{
 	      
 	      RunningJob runningJob = JobClient.runJob(conf);
 	      
-			JobConf conf2 = new JobConf(getConf(), RootJob.class);
-			conf2.setJobName("wordcountv2");
-
-			conf2.setOutputKeyClass(Text.class);
-			conf2.setOutputValueClass(IntWritable.class);
-
-			conf2.setMapperClass(StepOneMap.class);
-		      /*
-		       * Users can optionally specify a combiner via JobConf.setCombinerClass(Class), 
-		       * to perform local aggregation of the intermediate outputs, 
-		       * which helps to cut down the amount of data transferred from the Mapper to the Reducer.
-		       */
-			conf2.setCombinerClass(StepOneReduce.class);
-			conf2.setReducerClass(StepOneReduce.class);
-		      /*
-		       * How to Read calculate data and Write result.
-		       * Here, use text way that read calculate data from HDFS 
-		       * and then write result back to HDFS
-		       */
-			conf2.setInputFormat(TextInputFormat.class);
-			conf2.setOutputFormat(TextOutputFormat.class);
-		      FileInputFormat.setInputPaths(conf2, new Path(arg0[0]));
-		      FileOutputFormat.setOutputPath(conf2, new Path(arg0[1]+"1"));
 	      
 	      while(!runningJob.isComplete())
 	      {
 	    	  Thread.sleep(1000);
 	    	  LOG.info("wait for first job complete");
 	      }
-	      
+	      /*
+	       * If first MR complete and successful then to start second MR.
+	       * You've already found that EACH MR step mush have to read from HDFS and when finished to stored result to HDFS,
+	       * So this process is waste time, Spark optimize this process
+	       */
 	      if(runningJob.isSuccessful())
 	      {
+	      	  JobConf conf2 = new JobConf(getConf(), RootJob.class);
+		  conf2.setJobName("wordcountv2");
+
+		  conf2.setOutputKeyClass(Text.class);
+		  conf2.setOutputValueClass(IntWritable.class);
+
+		  conf2.setMapperClass(StepOneMap.class);
+		  /*
+		  * Users can optionally specify a combiner via JobConf.setCombinerClass(Class), 
+		  * to perform local aggregation of the intermediate outputs, 
+		  * which helps to cut down the amount of data transferred from the Mapper to the Reducer.
+		  */
+		  conf2.setCombinerClass(StepOneReduce.class);
+		  conf2.setReducerClass(StepOneReduce.class);
+		  /*
+		  * How to Read calculate data and Write result.
+		  * Here, use text way that read calculate data from HDFS 
+		  * and then write result back to HDFS
+		  */
+		  conf2.setInputFormat(TextInputFormat.class);
+		  conf2.setOutputFormat(TextOutputFormat.class);
+		  FileInputFormat.setInputPaths(conf2, new Path(arg0[0]));
+		  FileOutputFormat.setOutputPath(conf2, new Path(arg0[1]+"1"));
 	    	  RunningJob runningJob2 = JobClient.runJob(conf2);
 	    	  return 0;
 	      }
